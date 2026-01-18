@@ -696,15 +696,23 @@ SynthWave
         }
     }
 
-    // Open X (Twitter) with pre-filled post
-    openXPost(index) {
+    // Open X (Twitter) with pre-filled post (also copies to clipboard as backup)
+    async openXPost(index) {
         const post = this.posts[index];
         if (!post) return;
 
+        // First copy to clipboard as backup
+        try {
+            await navigator.clipboard.writeText(post.text);
+        } catch (err) {
+            // Ignore clipboard errors
+        }
+
+        // Then open X
         const encodedText = encodeURIComponent(post.text);
         const xUrl = `https://twitter.com/intent/tweet?text=${encodedText}`;
         window.open(xUrl, '_blank');
-        this.showToast(`${this.getCircledNumber(post.number)} Xを開きました`);
+        this.showToast(`${this.getCircledNumber(post.number)} コピー＆Xを開きました`);
     }
 
     // Copy all posts
