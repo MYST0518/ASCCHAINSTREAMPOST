@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ラジオ川越 AI音楽 Post Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🎵</span>
+                    <h1>AI音楽 Post Generator</h1>
+                </div>
+                <p class="tagline">ラジオ川越 AI音楽番組 投稿自動生成ツール</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Settings Panel -->
+            <section class="panel settings-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">⚙️</span> 設定</h2>
+                </div>
+                <div class="panel-content">
+                    <div class="form-group">
+                        <label for="showSelect">📻 番組選択</label>
+                        <select id="showSelect">
+                            <option value="asc">AI Sound Cypher（ASC）</option>
+                            <option value="chainstream">Chain Stream（チェンスト）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="spreadsheetUrl">📊 スプレッドシートURL</label>
+                        <input type="text" id="spreadsheetUrl"
+                            placeholder="https://docs.google.com/spreadsheets/d/xxxxx/edit?gid=xxxxx">
+                        <small>URLをそのまま貼り付け（IDとgidを自動抽出）</small>
+                    </div>
+                    <input type="hidden" id="spreadsheetId">
+                    <input type="hidden" id="sheetName">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eventDate">放送日</label>
+                            <input type="date" id="eventDate">
+                        </div>
+                        <div class="form-group" id="themeGroup">
+                            <label for="eventTheme">テーマ</label>
+                            <input type="text" id="eventTheme" placeholder="例: 光・LIGHT">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Spreadsheet Data -->
+            <section class="panel data-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">📊</span> スプレッドシートデータ</h2>
+                    <div class="header-actions">
+                        <button id="fetchDataBtn" class="btn btn-primary">
+                            <span class="btn-icon">🔄</span> 自動取得
+                        </button>
+                        <button id="loadDataBtn" class="btn btn-secondary" title="ヘルプ">
+                            <span class="btn-icon">❓</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="data-status" id="dataStatus">
+                        <div class="status-icon">📋</div>
+                        <p>「🔄 自動取得」または手動でペースト</p>
+                        <small>※共有設定「リンクを知っている全員が閲覧可」が必要</small>
+                    </div>
+                    <textarea id="spreadsheetData"
+                        placeholder="「🔄 自動取得」をクリック、または手動でペースト...&#10;&#10;【手動の場合】&#10;1. スプレッドシートを開く&#10;2. Ctrl+A（全選択）&#10;3. Ctrl+C（コピー）&#10;4. ここにCtrl+V&#10;&#10;※ヘッダー行も含めてOK（自動スキップ）"></textarea>
+                    <div class="data-info" id="dataInfo"></div>
+                </div>
+            </section>
+
+            <!-- Setlist Input -->
+            <section class="panel setlist-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">📝</span> セットリスト入力</h2>
+                </div>
+                <div class="panel-content">
+                    <textarea id="setlistInput"
+                        placeholder="セットリストをペースト...&#10;&#10;形式:&#10;00:00 OP&#10;01:09 Digital Soul Wave_スポットライト&#10;03:09 旧雅之_Electric Light Revolution&#10;..."></textarea>
+                    <button id="generateBtn" class="btn btn-generate">
+                        <span class="btn-icon">✨</span> ポスト生成
+                    </button>
+                </div>
+            </section>
+
+            <!-- Generated Posts -->
+            <section class="panel output-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">📤</span> 生成されたポスト</h2>
+                    <div class="header-actions">
+                        <button id="copyAllBtn" class="btn btn-secondary">
+                            <span class="btn-icon">📋</span> 全てコピー
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div id="postsContainer" class="posts-container">
+                        <div class="empty-state">
+                            <div class="empty-icon">🎤</div>
+                            <p>セットリストを入力して「ポスト生成」をクリック</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Broadcast Script (Chain Stream only) -->
+            <section class="panel script-panel" id="scriptPanel" style="display: none;">
+                <div class="panel-header">
+                    <h2><span class="icon">📜</span> 放送台本（J・K・L列）</h2>
+                    <div class="header-actions">
+                        <button id="copyScriptBtn" class="btn btn-secondary">
+                            <span class="btn-icon">📋</span> 台本コピー
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div id="scriptContainer" class="script-container">
+                        <div class="empty-state">
+                            <div class="empty-icon">📜</div>
+                            <p>チェンスト選択時にポスト生成すると台本も生成されます</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>AI音楽 Post Generator v1.1 | ラジオ川越</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
