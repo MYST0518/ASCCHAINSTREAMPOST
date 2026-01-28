@@ -624,14 +624,11 @@ SynthWave
             const script = artistData?.script || '';
 
             // Determine display link based on show type
-            let displayLink;
-            if (selectedShow === 'chainstream') {
-                // Chain Stream: accept any link in G column
+            let displayLink = link || '☺';
+
+            // ASCでもSuno/Udio以外のリンク（Google Drive等）を許容するように変更
+            if (selectedShow === 'asc') {
                 displayLink = link || '☺';
-            } else {
-                // ASC: only accept SUNO/Udio links
-                const isValidLink = link && (link.includes('suno.com') || link.includes('udio.com'));
-                displayLink = isValidLink ? link : '☺';
             }
 
             const postText = template.format({
