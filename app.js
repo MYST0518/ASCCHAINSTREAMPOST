@@ -247,16 +247,19 @@ SynthWave
         this.elements.fetchDataBtn.innerHTML = '<span class="btn-icon">⏳</span> 取得中...';
 
         try {
-            // Use the more direct /export?format=csv endpoint
-            // If the URL has a gid, we need to ensure it's passed correctly
+            // Direct CSV Export URL
             const googleUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
 
-            // Try multiple high-reliability CORS proxies
+            // GAS-based mirror (fallback/proxy)
+            const gasProxyUrl = `https://script.google.com/macros/s/AKfycbz_G1Dq8vXp6b7Y_Hj-L17G07w00M1l9vB6qDkz6C7z/exec?url=${encodeURIComponent(googleUrl)}`;
+
+            // List of methods to try
             const corsProxies = [
+                gasProxyUrl, // Try GAS proxy first as it's often most reliable for Google Sheets
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(googleUrl)}`,
                 `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`,
-                `https://thingproxy.freeboard.io/fetch/${googleUrl}`,
-                `https://cloud.any-api.com/proxy?url=${encodeURIComponent(googleUrl)}`
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(googleUrl)}`,
+                `https://win-cors-anywhere.herokuapp.com/${googleUrl}`
             ];
 
             let csvText = null;
