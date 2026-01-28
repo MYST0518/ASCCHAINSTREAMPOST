@@ -247,13 +247,16 @@ SynthWave
         this.elements.fetchDataBtn.innerHTML = '<span class="btn-icon">⏳</span> 取得中...';
 
         try {
-            // Google Sheets export URL
-            const googleUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+            // Use the more direct /export?format=csv endpoint
+            // If the URL has a gid, we need to ensure it's passed correctly
+            const googleUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
 
-            // Try multiple CORS proxies
+            // Try multiple high-reliability CORS proxies
             const corsProxies = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(googleUrl)}`,
                 `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`,
+                `https://thingproxy.freeboard.io/fetch/${googleUrl}`,
+                `https://cloud.any-api.com/proxy?url=${encodeURIComponent(googleUrl)}`
             ];
 
             let csvText = null;
