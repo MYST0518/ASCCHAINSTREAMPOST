@@ -7,22 +7,39 @@ class AIPostGenerator {
         this.artistData = new Map();
         this.posts = [];
 
+        // Month configurations with different column mappings
+        this.monthConfigs = {
+            'asc': {
+                name: 'AI Sound Cypher（ASC）',
+                spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1vW3xd0P3DDLa1RDBvFdxAqQz9PmhqPnEFfpKb2OWNVw/edit',
+                columns: {
+                    artistName: 1,   // B列 - X名（アーティスト名）
+                    xHandle: 3,      // D列 - X ID (@~)
+                    songTitle: 5,    // F列 - 曲名
+                    link: 7,         // H列 - 曲リンク
+                    script: 10       // K列 - 台本用コメント
+                }
+            },
+            'chainstream': {
+                name: 'Chain Stream（チェンスト）',
+                spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1HHYL-_VpXvEszprJs03P10K-nrDp3Xs_u3kmKq63tjU/edit?gid=64942825',
+                columns: {
+                    artistName: 1,   // B列 - X名（アーティスト名）
+                    xHandle: 3,      // D列 - X ID (@~)
+                    songTitle: 5,    // F列 - 曲名
+                    link: 7,         // H列 - 曲リンク
+                    script: 10       // K列 - 台本用コメント
+                }
+            }
+        };
+
         // Show Templates with column mappings
-        // Column indices when copying entire spreadsheet from column A (0-indexed)
-        // A=0(timestamp), B=1(artist), C=2, D=3(xHandle), E=4(song), F=5, G=6(ASC link), ... N=13(CS link)
         this.showTemplates = {
             asc: {
                 name: 'AI Sound Cypher',
                 shortName: 'ASC',
                 hashtags: '#AIサウンドサイファー #ラジオ川越',
                 hasTheme: true,
-                defaultUrl: 'https://docs.google.com/spreadsheets/d/1fVc8l1PQ_yD_m8t45ypAGAjlT0DQsGfEw2aSV23TD2Q/edit?gid=2063624759',
-                columns: {
-                    artistName: 1,   // B列 - X名（アーティスト名）
-                    xHandle: 3,      // D列 - X ID (@~)
-                    songTitle: 4,    // E列 - 曲名
-                    link: 6          // G列 - AI音楽サイトの曲リンク (SUNO, etc.)
-                },
                 copyRange: '全体（A列から）',
                 format: (data) => {
                     return `AI Sound Cypher　${data.formattedDate}『${data.theme}』
@@ -38,14 +55,6 @@ ${data.link}`;
                 shortName: 'チェンスト',
                 hashtags: '#チェンスト #ラジオ川越',
                 hasTheme: false,
-                defaultUrl: 'https://docs.google.com/spreadsheets/d/1fVc8l1PQ_yD_m8t45ypAGAjlT0DQsGfEw2aSV23TD2Q/edit?gid=2063624759',
-                columns: {
-                    artistName: 1,   // B列 - X名（アーティスト名）
-                    xHandle: 3,      // D列 - X ID (@~)
-                    songTitle: 4,    // E列 - 曲名
-                    script: 11,      // L列 - 感想・メッセージ・曲の説明等
-                    link: 6          // G列 - AI音楽サイトの曲リンク (SUNO, etc.)
-                },
                 copyRange: '全体（A列から）',
                 format: (data) => {
                     return `【AI音楽アーティストの曲を紹介するコーナー】
@@ -57,16 +66,18 @@ ${data.link}`;
                 },
                 // 台本フォーマット
                 scriptFormat: (data) => {
-                    return `${data.scriptD}
-${data.scriptE}
-${data.scriptF}`;
+                    return `${data.script}`;
                 }
             }
         };
 
+        // Current month config (will be set based on selector)
+        this.currentMonthConfig = null;
+
         // DOM Elements
         this.elements = {
             showSelect: document.getElementById('showSelect'),
+            monthSelect: document.getElementById('monthSelect'),
             spreadsheetUrl: document.getElementById('spreadsheetUrl'),
             spreadsheetId: document.getElementById('spreadsheetId'),
             sheetName: document.getElementById('sheetName'),
@@ -96,12 +107,15 @@ ${data.scriptF}`;
         const today = new Date().toISOString().split('T')[0];
         this.elements.eventDate.value = today;
 
-        // Default spreadsheet URL
-        this.elements.spreadsheetUrl.value = 'https://docs.google.com/spreadsheets/d/1MchGMQbisQy5FBW4NQaGhFG-yjKZ4G7yLFsUNgg74Qg/edit?gid=1469179837';
-        this.parseSpreadsheetUrl();
+        // Set default month/sheet
+        const keys = Object.keys(this.monthConfigs);
+        if (keys.length > 0) {
+            this.elements.monthSelect.value = keys[0];
+        }
 
         // Event Listeners
         this.elements.showSelect.addEventListener('change', () => this.onShowChange());
+        this.elements.monthSelect.addEventListener('change', () => this.onMonthChange());
         this.elements.spreadsheetUrl.addEventListener('input', () => this.parseSpreadsheetUrl());
         this.elements.spreadsheetData.addEventListener('input', () => this.parseSpreadsheetData());
         this.elements.generateBtn.addEventListener('click', () => this.generatePosts());
@@ -113,13 +127,46 @@ ${data.scriptF}`;
         // Load from localStorage if available
         this.loadFromStorage();
 
-        // Initial show setup
+        // Initial month and show setup
+        this.onMonthChange();
         this.onShowChange();
+    }
+
+    // Handle month selection change
+    onMonthChange() {
+        const selectedMonth = this.elements.monthSelect.value;
+        this.currentMonthConfig = this.monthConfigs[selectedMonth];
+
+        if (this.currentMonthConfig) {
+            // Update spreadsheet URL
+            this.elements.spreadsheetUrl.value = this.currentMonthConfig.spreadsheetUrl;
+            this.parseSpreadsheetUrl();
+
+            // Update theme if available
+            if (this.currentMonthConfig.theme) {
+                this.elements.eventTheme.value = this.currentMonthConfig.theme;
+            }
+
+            // Clear existing data when switching months
+            this.artistData.clear();
+            this.elements.spreadsheetData.value = '';
+            this.elements.dataStatus.classList.remove('hidden');
+            this.elements.dataInfo.classList.remove('visible');
+
+            this.showToast(`${this.currentMonthConfig.name}のスプレッドシートに切り替えました`);
+        }
     }
 
     // Handle show selection change
     onShowChange() {
         const selectedShow = this.elements.showSelect.value;
+
+        // 自動的に対応するシートを選択
+        if (this.monthConfigs[selectedShow]) {
+            this.elements.monthSelect.value = selectedShow;
+            this.onMonthChange();
+        }
+
         const template = this.showTemplates[selectedShow];
 
         // Show/hide theme input based on show type
@@ -134,12 +181,6 @@ ${data.scriptF}`;
             this.elements.scriptPanel.style.display = 'block';
         } else {
             this.elements.scriptPanel.style.display = 'none';
-        }
-
-        // Switch default spreadsheet URL based on show
-        if (template.defaultUrl) {
-            this.elements.spreadsheetUrl.value = template.defaultUrl;
-            this.parseSpreadsheetUrl();
         }
 
         // Clear existing data when switching shows
@@ -365,10 +406,14 @@ SynthWave
             return;
         }
 
-        // Get column mapping for selected show
-        const selectedShow = this.elements.showSelect.value;
-        const template = this.showTemplates[selectedShow];
-        const cols = template.columns;
+        // Get column mapping for selected month (or fallback to default)
+        const cols = this.currentMonthConfig?.columns || {
+            artistName: 1,
+            xHandle: 3,
+            songTitle: 4,
+            link: 6,
+            script: 11
+        };
 
         // Parse TSV data handling quoted fields with newlines
         const rows = this.parseTsvWithQuotes(rawData);
@@ -811,18 +856,21 @@ ${script}`);
         const selectedShow = this.elements.showSelect.value;
         const template = this.showTemplates[selectedShow];
 
-        let columnInfo;
-        if (selectedShow === 'chainstream') {
-            columnInfo = `• E列 → アーティスト名
-• G列 → Xハンドル
-• H列 → 曲名
-• N列 → SUNOリンク`;
-        } else {
-            columnInfo = `• E列 → アーティスト名
-• G列 → Xハンドル
-• H列 → 曲名
-• N列 → SUNOリンク`;
-        }
+        const cols = this.currentMonthConfig?.columns || {
+            artistName: 1,
+            xHandle: 3,
+            songTitle: 5,
+            link: 7,
+            script: 10
+        };
+
+        const getColLetter = (idx) => String.fromCharCode(65 + idx);
+
+        let columnInfo = `• ${getColLetter(cols.artistName)}列 → アーティスト名
+• ${getColLetter(cols.xHandle)}列 → Xハンドル
+• ${getColLetter(cols.songTitle)}列 → 曲名
+• ${getColLetter(cols.link)}列 → 曲リンク
+${cols.script !== undefined ? `• ${getColLetter(cols.script)}列 → 台本/感想` : ''}`;
 
         const instructions = `【データ読込方法】- ${template.name}
 
