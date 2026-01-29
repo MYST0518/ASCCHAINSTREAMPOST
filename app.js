@@ -24,11 +24,11 @@ class AIPostGenerator {
                 name: 'Chain Stream（チェンスト）',
                 spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1HHYL-_VpXvEszprJs03P10K-nrDp3Xs_u3kmKq63tjU/edit?gid=64942825',
                 columns: {
-                    artistName: 1,   // B列 - X名（アーティスト名）
+                    artistName: 2,   // C列 - X名（アーティスト名）
                     xHandle: 3,      // D列 - X ID (@~)
-                    songTitle: 5,    // F列 - 曲名
-                    link: 7,         // H列 - 曲リンク
-                    script: 10       // K列 - 台本用コメント
+                    songTitle: 6,    // G列 - 曲名
+                    link: 9,         // J列 - 曲リンク
+                    script: [8, 10]  // I列 & K列 - 台本/メッセージ
                 }
             }
         };
@@ -457,8 +457,16 @@ SynthWave
                 const songTitle = columns[cols.songTitle]?.trim() || '';
                 const link = columns[cols.link]?.trim() || '';
 
-                // Get script column for Chain Stream (L列 - single column now)
-                const script = cols.script !== undefined ? (columns[cols.script]?.trim() || '') : '';
+                // Get script column (supports single index or array of indices)
+                let script = '';
+                if (Array.isArray(cols.script)) {
+                    script = cols.script
+                        .map(idx => columns[idx]?.trim() || '')
+                        .filter(s => s)
+                        .join('\n');
+                } else if (cols.script !== undefined) {
+                    script = columns[cols.script]?.trim() || '';
+                }
 
                 // Skip empty or invalid rows
                 if (!artistName || artistName === '' || artistName.toLowerCase() === 'undefined') {
