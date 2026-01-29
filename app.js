@@ -877,13 +877,22 @@ ${script}`);
 
         const getColLetter = (idx) => String.fromCharCode(65 + idx);
 
-        let columnInfo = `• ${getColLetter(cols.artistName)}列 → アーティスト名
+        let scriptColInfo = '';
+        if (Array.isArray(cols.script)) {
+            scriptColInfo = `• ${cols.script.map(idx => getColLetter(idx)).join('・')}列 → 台本/感想`;
+        } else if (cols.script !== undefined) {
+            scriptColInfo = `• ${getColLetter(cols.script)}列 → 台本/感想`;
+        }
+
+        const columnInfo = `• ${getColLetter(cols.artistName)}列 → アーティスト名
 • ${getColLetter(cols.xHandle)}列 → Xハンドル
 • ${getColLetter(cols.songTitle)}列 → 曲名
 • ${getColLetter(cols.link)}列 → 曲リンク
-${cols.script !== undefined ? `• ${getColLetter(cols.script)}列 → 台本/感想` : ''}`;
+${scriptColInfo}`;
 
         const instructions = `【データ読込方法】- ${template.name}
+
+⚠️ 設定変更後は「自動取得」を再度実行してください。
 
 📋 簡単3ステップ:
 
@@ -892,7 +901,7 @@ ${cols.script !== undefined ? `• ${getColLetter(cols.script)}列 → 台本/�
    ※ヘッダー行も含めてOK（自動でスキップ）
 3. このページの入力エリアにペースト（Ctrl+V）
 
-自動で以下の列を読み取ります:
+現在の列設定:
 ${columnInfo}`;
 
         alert(instructions);
