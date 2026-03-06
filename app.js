@@ -11,7 +11,7 @@ class AIPostGenerator {
         this.monthConfigs = {
             'asc': {
                 name: 'AI Sound Cypher（ASC）',
-                spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1vW3xd0P3DDLa1RDBvFdxAqQz9PmhqPnEFfpKb2OWNVw/edit?gid=1443547391',
+                                                spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1y7QLArMG_maSg4wQUt5H8qt1bekFD9-jN5iOau1v5iE/edit?gid=103982788#gid=103982788',
                 columns: {
                     artistName: 1,   // B列 - X名（アーティスト名）
                     xHandle: 3,      // D列 - X ID (@~)
@@ -956,3 +956,4 @@ ${columnInfo}`;
 document.addEventListener('DOMContentLoaded', () => {
     window.aiApp = new AIPostGenerator();
 });
+
