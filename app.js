@@ -1,4 +1,4 @@
-// ===================================
+﻿// ===================================
 
 // AI音楽 Post Generator - Main Application
 
@@ -24,7 +24,7 @@ class AIPostGenerator {
 
                 name: 'AI Sound Cypher（ASC）',
 
-                                                spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1y7QLArMG_maSg4wQUt5H8qt1bekFD9-jN5iOau1v5iE/edit?gid=103982788#gid=103982788',
+                spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1y7QLArMG_maSg4wQUt5H8qt1bekFD9-jN5iOau1v5iE/edit?gid=103982788#gid=103982788',
 
                 columns: {
 
@@ -469,119 +469,63 @@ SynthWave
     // Fetch spreadsheet data automatically
 
     async fetchSpreadsheetData() {
-
         const spreadsheetId = this.elements.spreadsheetId.value;
-
         const gid = this.elements.sheetName.value || '0';
 
-
-
         if (!spreadsheetId) {
-
             this.showToast('スプレッドシートURLを入力してください');
-
             return;
-
         }
 
-
-
         // Show loading state
-
         this.elements.fetchDataBtn.disabled = true;
-
         this.elements.fetchDataBtn.innerHTML = '<span class="btn-icon">⏳</span> 取得中...';
 
-
-
         try {
-
-            // Direct CSV Export URL
-
-            const googleUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
-
-
+            // Updated to Gviz URL format which is more reliable for direct CORS fetch
+            const googleUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
 
             // GAS-based mirror (fallback/proxy)
-
             const gasProxyUrl = `https://script.google.com/macros/s/AKfycbz_G1Dq8vXp6b7Y_Hj-L17G07w00M1l9vB6qDkz6C7z/exec?url=${encodeURIComponent(googleUrl)}`;
 
-
-
-            // List of methods to try
-
+            // List of methods to try - TRY DIRECT GOOGLE URL FIRST
             const corsProxies = [
-
-                gasProxyUrl, // Try GAS proxy first as it's often most reliable for Google Sheets
-
+                googleUrl,   // Direct fetch (often works if sheet is public)
+                gasProxyUrl, // GAS proxy
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(googleUrl)}`,
-
                 `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`,
-
                 `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(googleUrl)}`,
-
                 `https://win-cors-anywhere.herokuapp.com/${googleUrl}`
-
             ];
 
-
-
             let csvText = null;
-
             let lastError = null;
 
-
-
             for (const proxyUrl of corsProxies) {
-
                 try {
-
                     const response = await fetch(proxyUrl, {
-
                         method: 'GET',
-
                         headers: {
-
                             'Accept': 'text/csv,text/plain,*/*'
-
                         }
-
                     });
 
-
-
                     if (response.ok) {
-
                         csvText = await response.text();
 
-
-
                         // Check if we got valid CSV data (not an error page)
-
                         if (csvText && !csvText.includes('<!DOCTYPE') && !csvText.includes('<html')) {
-
                             break;
-
                         }
-
                     }
-
                 } catch (e) {
-
                     lastError = e;
-
                     continue;
-
                 }
-
             }
 
-
-
             if (!csvText || csvText.includes('<!DOCTYPE') || csvText.includes('<html')) {
-
                 throw new Error('データを取得できませんでした');
-
             }
 
 
@@ -645,76 +589,45 @@ SynthWave
     // Convert CSV to TSV format
 
     csvToTsv(csv) {
-
         const lines = [];
-
         let currentLine = '';
-
         let inQuotes = false;
 
-
-
         for (let i = 0; i < csv.length; i++) {
-
             const char = csv[i];
 
-
-
-
-            // ROBUSTNESS: If we are at the start of a line, check if it looks like a new entry.
-            // If so, force inQuotes to false to prevent a stray quote from swallowining the rest of the file.
+            // ROBUSTNESS: Reset quote state if we see a new line starting with a timestamp.
             if ((char === '\n' || i === 0)) {
                 const checkPos = (char === '\n') ? i + 1 : i;
-                const lookAhead = text.substring(checkPos, checkPos + 20);
+                const lookAhead = csv.substring(checkPos, checkPos + 20);
                 const timestampRegex = /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/;
                 if (timestampRegex.test(lookAhead)) {
-                    inQuotes = false; 
+                    inQuotes = false;
                 }
             }
+
             if (char === '"') {
-
                 if (inQuotes && csv[i + 1] === '"') {
-
                     currentLine += '"';
-
                     i++;
-
                 } else {
-
                     inQuotes = !inQuotes;
-
                 }
-
             } else if (char === ',' && !inQuotes) {
-
                 currentLine += '\t';
-
             } else if (char === '\n' && !inQuotes) {
-
                 lines.push(currentLine);
-
                 currentLine = '';
-
             } else if (char !== '\r') {
-
                 currentLine += char;
-
             }
-
         }
-
-
 
         if (currentLine) {
-
             lines.push(currentLine);
-
         }
 
-
-
         return lines.join('\n');
-
     }
 
 
@@ -722,97 +635,56 @@ SynthWave
     // Parse TSV data with quoted fields (handles newlines inside cells)
 
     parseTsvWithQuotes(text) {
-
         const rows = [];
-
         let currentRow = [];
-
         let currentCell = '';
-
         let inQuotes = false;
 
-
-
         for (let i = 0; i < text.length; i++) {
-
             const char = text[i];
-
             const nextChar = text[i + 1];
 
-
+            // ROBUSTNESS: Reset quote state if we see a new line starting with a timestamp.
+            if ((char === '\n' || i === 0)) {
+                const checkPos = (char === '\n') ? i + 1 : i;
+                const lookAhead = text.substring(checkPos, checkPos + 20);
+                const timestampRegex = /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/;
+                if (timestampRegex.test(lookAhead)) {
+                    inQuotes = false;
+                }
+            }
 
             if (char === '"') {
-
                 if (inQuotes && nextChar === '"') {
-
-                    // Escaped quote
-
                     currentCell += '"';
-
                     i++;
-
                 } else {
-
-                    // Toggle quote state
-
                     inQuotes = !inQuotes;
-
                 }
-
             } else if (char === '\t' && !inQuotes) {
-
-                // End of cell
-
                 currentRow.push(currentCell);
-
                 currentCell = '';
-
             } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !inQuotes) {
-
-                // End of row
-
-                if (char === '\r') i++; // Skip \n after \r
-
+                if (char === '\r') i++;
                 currentRow.push(currentCell);
-
-                if (currentRow.some(cell => cell.trim())) { // Skip empty rows
-
+                if (currentRow.some(cell => cell.trim())) {
                     rows.push(currentRow);
-
                 }
-
                 currentRow = [];
-
                 currentCell = '';
-
             } else if (char !== '\r') {
-
                 currentCell += char;
-
             }
-
         }
-
-
-
-        // Don't forget the last cell and row
 
         if (currentCell || currentRow.length > 0) {
-
             currentRow.push(currentCell);
-
             if (currentRow.some(cell => cell.trim())) {
-
                 rows.push(currentRow);
-
             }
-
         }
 
-
-
         return rows;
-
     }
 
 
