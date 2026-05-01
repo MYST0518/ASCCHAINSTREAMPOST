@@ -1,4 +1,4 @@
-﻿// ===================================
+// ===================================
 
 // AI音楽 Post Generator - Main Application
 
@@ -85,19 +85,12 @@ class AIPostGenerator {
                 copyRange: '全体（A列から）',
 
                 format: (data) => {
-
                     return `AI Sound Cypher　${data.formattedDate}『${data.theme}』
-
 ${this.showTemplates.asc.hashtags}
 
-
-
 ${data.number}${data.artistName}　　${data.xHandle}
-
 「${data.songTitle}」
-
 ${data.link}`;
-
                 }
 
             },
