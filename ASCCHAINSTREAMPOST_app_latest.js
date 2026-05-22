@@ -34,7 +34,7 @@ class AIPostGenerator {
 
                     songTitle: 5,    // F列 - 曲名
 
-                    link: 7,         // H列 - 曲リンク
+                    link: [7, 8],    // H列 または I列 - 曲リンク (H列優先、空ならI列)
 
                     script: 10       // K列 - 台本用コメント
 
@@ -85,10 +85,11 @@ class AIPostGenerator {
                 copyRange: '全体（A列から）',
 
                 format: (data) => {
+                    const handleStr = data.xHandle ? `　　${data.xHandle}` : '';
                     return `AI Sound Cypher　${data.formattedDate}『${data.theme}』
 ${this.showTemplates.asc.hashtags}
 
-${data.number}${data.artistName}　　${data.xHandle}
+${data.number}${data.artistName}${handleStr}
 「${data.songTitle}」
 ${data.link}`;
                 }
@@ -108,16 +109,11 @@ ${data.link}`;
                 copyRange: '全体（A列から）',
 
                 format: (data) => {
-
+                    const handleStr = data.xHandle ? `（${data.xHandle}）` : '';
                     return `【AI音楽アーティストの曲を紹介するコーナー】
-
 『Chain Stream』${data.formattedDate}　${this.showTemplates.chainstream.hashtags}
 
-
-
-"${data.songTitle}" by ${data.artistName}（${data.xHandle}）
-
-
+"${data.songTitle}" by ${data.artistName}${handleStr}
 
 ${data.link}`;
 
@@ -788,7 +784,18 @@ SynthWave
 
                 const songTitle = columns[cols.songTitle]?.trim() || '';
 
-                const link = columns[cols.link]?.trim() || '';
+                let link = '';
+                if (Array.isArray(cols.link)) {
+                    for (const idx of cols.link) {
+                        const val = columns[idx]?.trim();
+                        if (val) {
+                            link = val;
+                            break;
+                        }
+                    }
+                } else {
+                    link = columns[cols.link]?.trim() || '';
+                }
 
 
 
@@ -1620,7 +1627,7 @@ ${script}`);
 
             songTitle: 5,
 
-            link: 7,
+            link: [7, 8],
 
             script: 10
 
@@ -1646,13 +1653,27 @@ ${script}`);
 
 
 
+        let linkColInfo = '';
+
+        if (Array.isArray(cols.link)) {
+
+            linkColInfo = `• ${cols.link.map(idx => getColLetter(idx)).join('・')}列 → 曲リンク（優先順）`;
+
+        } else {
+
+            linkColInfo = `• ${getColLetter(cols.link)}列 → 曲リンク`;
+
+        }
+
+
+
         const columnInfo = `• ${getColLetter(cols.artistName)}列 → アーティスト名
 
 • ${getColLetter(cols.xHandle)}列 → Xハンドル
 
 • ${getColLetter(cols.songTitle)}列 → 曲名
 
-• ${getColLetter(cols.link)}列 → 曲リンク
+${linkColInfo}
 
 ${scriptColInfo}`;
 
