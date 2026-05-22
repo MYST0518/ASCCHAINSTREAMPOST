@@ -930,27 +930,31 @@ SynthWave
 
         // Partial match - try both directions
 
-        for (const [key, value] of this.artistData) {
+        if (normalizedSearch.length >= 4) {
 
-            const simplifiedKey = key.replace(/[-_\s　]/g, '');
+            for (const [key, value] of this.artistData) {
 
-
-
-            // Check if either contains the other
-
-            if (key.includes(normalizedSearch) || normalizedSearch.includes(key)) {
-
-                return value;
-
-            }
+                const simplifiedKey = key.replace(/[-_\s　]/g, '');
 
 
 
-            // Check simplified versions
+                // Check if either contains the other
 
-            if (simplifiedKey.includes(simplifiedSearch) || simplifiedSearch.includes(simplifiedKey)) {
+                if (key.includes(normalizedSearch) || normalizedSearch.includes(key)) {
 
-                return value;
+                    return value;
+
+                }
+
+
+
+                // Check simplified versions
+
+                if (simplifiedKey.includes(simplifiedSearch) || simplifiedSearch.includes(simplifiedKey)) {
+
+                    return value;
+
+                }
 
             }
 
@@ -1040,9 +1044,47 @@ SynthWave
 
                 const parts = rest.split('_');
 
-                artistName = parts[0]?.trim();
+                let foundMatch = false;
 
-                songTitle = parts.length > 1 ? parts.slice(1).join('_').trim() : '';
+
+
+                // Try from longest possible artist prefix down to 1 part
+
+                for (let i = parts.length - 1; i >= 1; i--) {
+
+                    const candidateArtist = parts.slice(0, i).join('_').trim();
+
+                    const normalizedCandidate = candidateArtist.toLowerCase();
+
+                    const simplifiedCandidate = normalizedCandidate.replace(/[-_\s　]/g, '');
+
+
+
+                    if (this.artistData.has(normalizedCandidate) || this.artistData.has(simplifiedCandidate)) {
+
+                        artistName = candidateArtist;
+
+                        songTitle = parts.slice(i).join('_').trim();
+
+                        foundMatch = true;
+
+                        break;
+
+                    }
+
+                }
+
+
+
+                if (!foundMatch) {
+
+                    // Fallback to splitting by the first underscore
+
+                    artistName = parts[0]?.trim();
+
+                    songTitle = parts.length > 1 ? parts.slice(1).join('_').trim() : '';
+
+                }
 
             }
 
