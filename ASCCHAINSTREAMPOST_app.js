@@ -1,4 +1,4 @@
-﻿// ===================================
+// ===================================
 // AI音楽 Post Generator - Main Application
 // ===================================
 
@@ -524,17 +524,19 @@ SynthWave
         }
 
         // Partial match - try both directions
-        for (const [key, value] of this.artistData) {
-            const simplifiedKey = key.replace(/[-_\s　]/g, '');
+        if (normalizedSearch.length >= 4) {
+            for (const [key, value] of this.artistData) {
+                const simplifiedKey = key.replace(/[-_\s　]/g, '');
 
-            // Check if either contains the other
-            if (key.includes(normalizedSearch) || normalizedSearch.includes(key)) {
-                return value;
-            }
+                // Check if either contains the other
+                if (key.includes(normalizedSearch) || normalizedSearch.includes(key)) {
+                    return value;
+                }
 
-            // Check simplified versions
-            if (simplifiedKey.includes(simplifiedSearch) || simplifiedSearch.includes(simplifiedKey)) {
-                return value;
+                // Check simplified versions
+                if (simplifiedKey.includes(simplifiedSearch) || simplifiedSearch.includes(simplifiedKey)) {
+                    return value;
+                }
             }
         }
 
@@ -579,8 +581,27 @@ SynthWave
             } else {
                 // ASC: artist_song format
                 const parts = rest.split('_');
-                artistName = parts[0]?.trim();
-                songTitle = parts.length > 1 ? parts.slice(1).join('_').trim() : '';
+                let foundMatch = false;
+
+                // Try from longest possible artist prefix down to 1 part
+                for (let i = parts.length - 1; i >= 1; i--) {
+                    const candidateArtist = parts.slice(0, i).join('_').trim();
+                    const normalizedCandidate = candidateArtist.toLowerCase();
+                    const simplifiedCandidate = normalizedCandidate.replace(/[-_\s　]/g, '');
+
+                    if (this.artistData.has(normalizedCandidate) || this.artistData.has(simplifiedCandidate)) {
+                        artistName = candidateArtist;
+                        songTitle = parts.slice(i).join('_').trim();
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                if (!foundMatch) {
+                    // Fallback to splitting by the first underscore
+                    artistName = parts[0]?.trim();
+                    songTitle = parts.length > 1 ? parts.slice(1).join('_').trim() : '';
+                }
             }
 
             if (artistName) {
