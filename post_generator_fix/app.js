@@ -85,10 +85,9 @@ class AIPostGenerator {
                 copyRange: '全体（A列から）',
 
                 format: (data) => {
-                    const handleStr = data.xHandle ? `　　${data.xHandle}` : '';
+                    const handleStr = data.xHandle ? `　${data.xHandle}` : '';
                     return `AI Sound Cypher　${data.formattedDate}『${data.theme}』
 ${this.showTemplates.asc.hashtags}
-
 ${data.number}${data.artistName}${handleStr}
 「${data.songTitle}」
 ${data.link}`;
@@ -112,9 +111,7 @@ ${data.link}`;
                     const handleStr = data.xHandle ? `（${data.xHandle}）` : '';
                     return `【AI音楽アーティストの曲を紹介するコーナー】
 『Chain Stream』${data.formattedDate}　${this.showTemplates.chainstream.hashtags}
-
 "${data.songTitle}" by ${data.artistName}${handleStr}
-
 ${data.link}`;
 
                 },
